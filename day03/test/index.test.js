@@ -19,5 +19,5 @@ test('part1', ()=>{
 })
 
 test('part2', ()=>{
-    expect(getSolutionPart2(testData)).toBe(2286)
+    expect(getSolutionPart2(testData)).toBe(467835)
 })
