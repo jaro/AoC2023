@@ -1,6 +1,7 @@
 const fs = require('fs')
 
-const rank = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+const deckWithJack = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+const deckWithJoker = ['J', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'Q', 'K', 'A']
 const hands = {FIVE:70, FOUR:60, HOUSE:50, THREE:40, TWO_PAIR:30, PAIR:20, HIGH:10}
 
 function inputDataLinesStrings(filename="input.txt") {
@@ -11,15 +12,18 @@ function getSolutionPart1(lines) {
     let games = parseGames(lines)
 
     let sortedGames = games.sort((a,b) => sortGame(a, b))
-    
-    sortedGames.map((game, index) => console.log([game[0], getKey(calcHand(game)), (index+1), game[2], game[2] * (index+1)]))
     let points = sortedGames.map((game, index) => (game[2] * (index+1))).reduce((a,b) => a+b)
 
     return points
 }
 
 function getSolutionPart2(lines) {
-    return 0
+    let games = parseGames(lines)
+
+    let sortedGames = games.sort((a,b) => sortGame2(a, b))
+    let points = sortedGames.map((game, index) => (game[2] * (index+1))).reduce((a,b) => a+b)
+
+    return points
 }
 
 function getKey(value) {
@@ -46,8 +50,6 @@ function getKey(value) {
             return 'HIGH'
             break
     }
-
-    return "Not Found..."
 }
 
 function sortGame(a, b) {
@@ -60,31 +62,34 @@ function sortGame(a, b) {
         return -1
     else {
         for (cardIndex in a[0]) {
-            //console.log('Compare ' + a[0][cardIndex] +'('+rank.indexOf(a[0][cardIndex])+ ') with ' + b[0][cardIndex] +'('+rank.indexOf(b[0][cardIndex])+ ')')
-            if (rank.indexOf(a[0][cardIndex]) > rank.indexOf(b[0][cardIndex]))
+            if (deckWithJack.indexOf(a[0][cardIndex]) > deckWithJack.indexOf(b[0][cardIndex]))
                 return 1
-            else if (rank.indexOf(a[0][cardIndex]) < rank.indexOf(b[0][cardIndex]))
+            else if (deckWithJack.indexOf(a[0][cardIndex]) < deckWithJack.indexOf(b[0][cardIndex]))
                 return -1
         }
     }
     
-    console.log("Same..." + a[0] + ' == ' + b[0])
     return 0
 }
 
-function parseGames(lines) {
-    //32T3K 765
-    var hands = new Array()
-    var rankMaps = new Array()
-    var bets = new Array()
-    
-    for (line of lines) {
-        hands.push(Array.from(line.split(' ')[0]))
-        rankMaps.push(getRankMap(hands[hands.length-1]))
-        bets.push(line.split(' ')[1])
-    }
+function sortGame2(a, b) {
+    let pointsA = calcHand2(a)
+    let pointsB = calcHand2(b)
 
-    return hands.map((hand, index) => [hand, rankMaps[index], bets[index]])
+    if (pointsA>pointsB)
+        return 1
+    else if (pointsB>pointsA)
+        return -1
+    else {
+        for (cardIndex in a[0]) {
+            if (deckWithJoker.indexOf(a[0][cardIndex]) > deckWithJoker.indexOf(b[0][cardIndex]))
+                return 1
+            else if (deckWithJoker.indexOf(a[0][cardIndex]) < deckWithJoker.indexOf(b[0][cardIndex]))
+                return -1
+        }
+    }
+    
+    return 0
 }
 
 function calcHand(hand) {
@@ -106,8 +111,52 @@ function calcHand(hand) {
         return hands.HIGH
 }
 
+function calcHand2(hand) {
+    var map = new Map(hand[1])
+    
+    let jokers = map.get('J')
+    map.set('J', 0)
+    let rankValues = Array.from(map.values())
+    
+    if (rankValues.filter(v => (v+jokers)>=5).length >= 1) {
+        return hands.FIVE
+    } else if (rankValues.filter(v => (v+jokers)>=4).length >= 1) {
+        return hands.FOUR
+    }
+    if (jokers == 2) {
+        if (rankValues.filter(v => (v==2)).length >= 1) {
+            return hands.HOUSE
+        } else if (rankValues.filter(v => (v==1)).length >= 1) {
+            return hands.THREE
+        } else { //alltid tvåpar
+            return hands.TWO_PAIR
+        }
+    } else if (jokers == 1) {
+        if (rankValues.filter(v => (v==2)).length >= 2) {
+            return hands.HOUSE
+        } else if (rankValues.filter(v => (v==3)).length >= 1) {
+            return hands.HOUSE
+        } else if(rankValues.filter(v => v==2).length >= 1) {
+            return hands.THREE
+        } else {
+            return hands.PAIR
+        }
+    } else {
+        if (rankValues.filter(v => v==2).length == 2)
+            return hands.TWO_PAIR
+        else if (rankValues.filter(v => (v==3 ||v==2)).length == 2)
+            return hands.HOUSE
+        else if (rankValues.filter(v => v==3).length == 1)
+            return hands.THREE
+        else if (rankValues.filter(v => v==2).length == 1)
+            return hands.PAIR
+        else
+            return hands.HIGH
+    }
+}
+
 function getRankMap(hand) {
-    var map = new Map(rank.map(r => [r, 0]))
+    var map = new Map(deckWithJack.map(r => [r, 0]))
 
     for (card of hand) {
         let value = map.get(card)
@@ -115,6 +164,20 @@ function getRankMap(hand) {
     }
 
     return map
+}
+
+function parseGames(lines) {
+    var hands = new Array()
+    var rankMaps = new Array()
+    var bets = new Array()
+    
+    for (line of lines) {
+        hands.push(Array.from(line.split(' ')[0]))
+        rankMaps.push(getRankMap(hands[hands.length-1]))
+        bets.push(line.split(' ')[1])
+    }
+
+    return hands.map((hand, index) => [hand, rankMaps[index], bets[index]])
 }
 
 const part = process.env.part || "part1"
