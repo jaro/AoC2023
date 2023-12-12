@@ -14,7 +14,12 @@ function getSolutionPart1(lines) {
 }
 
 function getSolutionPart2(lines) {
-    return 0
+    let reports = lines.map(line => createReport(line))
+    let extrapolatedReports = reports.map(report => extrapolateHistoricalReport(report))
+    
+    let result = extrapolatedReports.map(report => report[0][0]).reduce((a,b) => a+b)
+
+    return result
 }
 
 function extrapolateReport(report) {
@@ -24,6 +29,18 @@ function extrapolateReport(report) {
         let diff = report[i][report[i].length-1]
         let extpValue = (report[i-1][report[i-1].length-1] + diff)
         report[i-1].push(extpValue)
+    }
+
+    return report
+}
+
+function extrapolateHistoricalReport(report) {
+    report[report.length-1].unshift(0)
+
+    for (var i=(report.length-1);i>0;i--) {
+        let diff = report[i][0]
+        let extpValue = (report[i-1][0] - diff)
+        report[i-1].unshift(extpValue)
     }
 
     return report
